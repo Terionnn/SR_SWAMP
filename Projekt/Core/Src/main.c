@@ -98,7 +98,7 @@ static int16_t audio_data[2 * BUFFER_SIZE];
 void play_tone(void)
 {
     for (int i = 0; i < BUFFER_SIZE; i++) {
-        int16_t value = (int16_t)(32000.0 * sin(2.0 * M_PI * i / 22.0));
+        int16_t value = (int16_t)(100000.0 * sin(2.0 * M_PI * i / 22.0));
         audio_data[i * 2] = value;
         audio_data[i * 2 + 1] = value;
     }
@@ -116,8 +116,8 @@ while(1)
   uint8_t buffer[6];
   uint8_t i = 0;
   uint8_t sensitivity = LSM303C_ACC_SENSITIVITY_2G;
-  float dane[3];
-  float dane1[3];
+  float raw_float[3];
+  float scaled[3];
 
 void akcelerometr_init()
 {
@@ -125,7 +125,7 @@ void akcelerometr_init()
 	ACCELERO_IO_Write(LSM303C_CTRL_REG1_A, 0b01100111);
     ACCELERO_IO_Write(LSM303C_CTRL_REG4_A, 0b00110111);
 }
-void akcelerometr_pobierz()
+void akcelerometr_read()
 {
 	buffer[0] = ACCELERO_IO_Read(LSM303C_OUT_X_L_A);
 	buffer[1] = ACCELERO_IO_Read(LSM303C_OUT_X_H_A);
@@ -137,8 +137,8 @@ void akcelerometr_pobierz()
 	      for(i=0; i<3; i++)
 	          {
 	            pnRawData[i]=((int16_t)((uint16_t)buffer[2*i+1] << 8) + buffer[2*i]);
-	            dane[i] = (float)pnRawData[i];
-	           	dane1[i] = (dane[i] * 0.244) / 1000;
+	            raw_float[i] = (float)pnRawData[i];
+	           	scaled[i] = (raw_float[i] * 0.244) / 1000;
 	          }
 
 }
@@ -189,11 +189,12 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+ // play_tone();
   akcelerometr_init();
   HAL_Delay(1000);
 
-   //HAL_TIM_Base_Start_IT(&htim1); //1Hz --> otrzeżenie
-   HAL_TIM_Base_Start_IT(&htim3); //4Hz
+   HAL_TIM_Base_Start_IT(&htim1); //1Hz --> otrzezenie
+   //HAL_TIM_Base_Start_IT(&htim3); //4Hz
 
 
   /* USER CODE BEGIN 2 */
@@ -203,7 +204,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  akcelerometr_pobierz();
+	  akcelerometr_read();
 	  HAL_RTC_GetTime(&hrtc, &RtcTime, RTC_FORMAT_BIN);
 	  HAL_RTC_GetDate(&hrtc, &RtcDate, RTC_FORMAT_BIN);
 	  HAL_Delay(500);
@@ -474,7 +475,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 1000;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 64000;
+  htim1.Init.Period = 32000;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -521,7 +522,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 1000;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 16000;
+  htim3.Init.Period = 8000;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
